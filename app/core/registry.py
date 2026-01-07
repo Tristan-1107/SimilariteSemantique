@@ -1,7 +1,6 @@
 # app/core/registry.py
 
-from app.core.metrics import BaseMetric, JaccardMetric
-
+from app.core.metrics import JaccardMetric, DiceMetric, LevenshteinMetric
 
 class MetricsRegistry:
     def __init__(self):
@@ -22,3 +21,7 @@ class MetricsRegistry:
 
 registry = MetricsRegistry()
 registry.register(JaccardMetric())
+
+registry.register(DiceMetric())
+
+registry.register(LevenshteinMetric())

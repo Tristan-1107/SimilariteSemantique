@@ -1,4 +1,7 @@
 # tests/test_api.py
+
+# Pour lancer ce pgm, se placer dans le repertoire racine "SimilariteSemantique" et exécuter la commande "python3 -m tests.testApi"
+
 from fastapi.testclient import TestClient
 from app.main import app
 
