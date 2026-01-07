@@ -1,4 +1,4 @@
-#!/mnt/c/Users/ttrit/OneDrive/Documents/ING2/Projet/depot/SimilariteSemantique/venv/bin/python3
+#!/home/sabri/info2/conduiteGestionProjet/SimilariteSemantique/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
