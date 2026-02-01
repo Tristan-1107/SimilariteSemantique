@@ -1,6 +1,11 @@
 # app/core/registry.py
 
-from app.core.metrics import JaccardMetric, DiceMetric, LevenshteinMetric
+from app.core.metrics import (
+    JaccardMetric, 
+    DiceMetric, 
+    LevenshteinMetric, 
+    SpacyVectorMetric
+)
 
 class MetricsRegistry:
     def __init__(self):
@@ -19,9 +24,15 @@ class MetricsRegistry:
         ]
 
 
+# Instanciation du registre et enregistrement des métriques disponibles
 registry = MetricsRegistry()
-registry.register(JaccardMetric())
 
+# Métriques Lexicales (Améliorées avec spaCy pour le nettoyage)
+registry.register(JaccardMetric())
 registry.register(DiceMetric())
 
+# Métrique Morphologique (Caractères)
 registry.register(LevenshteinMetric())
+
+# Métrique Sémantique (Vecteurs - Nouveauté Sprint 3)
+registry.register(SpacyVectorMetric())
