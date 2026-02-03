@@ -4,7 +4,8 @@ from app.core.metrics import (
     JaccardMetric, 
     DiceMetric, 
     LevenshteinMetric, 
-    SpacyVectorMetric
+    SpacyVectorMetric,
+    CamembertMetric  
 )
 
 class MetricsRegistry:
@@ -24,15 +25,12 @@ class MetricsRegistry:
         ]
 
 
-# Instanciation du registre et enregistrement des métriques disponibles
 registry = MetricsRegistry()
 
-# Métriques Lexicales (Améliorées avec spaCy pour le nettoyage)
 registry.register(JaccardMetric())
 registry.register(DiceMetric())
 
-# Métrique Morphologique (Caractères)
 registry.register(LevenshteinMetric())
 
-# Métrique Sémantique (Vecteurs - Nouveauté Sprint 3)
-registry.register(SpacyVectorMetric())
+registry.register(SpacyVectorMetric())  # Vecteurs spaCy (rapide, contexte moyen)
+registry.register(CamembertMetric())    # Vecteurs BERT/CamemBERT (plus lent, contexte fort)

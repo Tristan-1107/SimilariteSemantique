@@ -2,3 +2,6 @@ fastapi
 uvicorn
 httpx
 pydantic
+sentence-transformers
+scikit-learn
+spacy

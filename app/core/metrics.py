@@ -1,5 +1,6 @@
 # app/core/metrics.py
 import spacy
+from sentence_transformers import SentenceTransformer, util
 
 # --- Chargement du modèle spaCy ---
 # On tente de charger le modèle français "medium" qui contient les vecteurs.
@@ -12,13 +13,25 @@ except OSError:
     nlp = spacy.blank("fr")
 
 
+# --- Gestion du modèle BERT (Initialisation paresseuse / Lazy Loading) ---
+# On utilise une variable globale pour stocker le modèle une fois chargé.
+# Cela évite de le charger au démarrage de l'API (ce qui serait lent).
+_bert_model = None
+
+
+# Charge le modèle BERT/CamemBERT uniquement lors du premier appel
+def get_bert_model():
+    global _bert_model
+    if _bert_model is None:
+        print("Chargement du modèle CamemBERT en cours... (cela peut prendre un moment)")
+        # Modèle multilingue
+        model_name = 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
+        _bert_model = SentenceTransformer(model_name)
+        print("Modèle CamemBERT chargé !")
+    return _bert_model
+
+#  Transforme le texte en liste de lemmes (racines) en retiran la ponctuation et les mots vides (stop words).
 def spacy_preprocess(text):
-    """
-    Tokenisation avancée pour le Sprint 3.
-    Transforme le texte en liste de lemmes (racines) en retirant
-    la ponctuation et les mots vides (stop words).
-    """
-    # La syntaxe (text or "") gère le cas où text est None
     doc = nlp((text or "").lower())
     
     tokens = [
@@ -172,5 +185,31 @@ class SpacyVectorMetric(BaseMetric):
             detail={
                 "vector_size": doc1.vector.shape[0],
                 "has_vector": doc1.has_vector and doc2.has_vector
+            }
+        )
+
+
+class CamembertMetric(BaseMetric):
+    name = "camembert"
+    description = "Similarité sémantique via BERT/CamemBERT (Embeddings contextuels + Cosinus)"
+
+    def compute(self, phrase1, phrase2):
+        model = get_bert_model()
+        
+        # Convertit les phrases en listes de nombres représentant leur sens
+        embeddings = model.encode([phrase1 or "", phrase2 or ""])
+        
+        # util.cos_sim renvoie un tenseur PyTorch, on récupère la valeur float avec .item()
+        score = util.cos_sim(embeddings[0], embeddings[1]).item()
+        
+        # Le cosinus est théoriquement entre -1 et 1. On le ramène à 0-1 si besoin
+        score = max(0.0, min(1.0, score))
+
+        return MetricResult(
+            name=self.name,
+            score=score,
+            detail={
+                "model": "paraphrase-multilingual-MiniLM-L12-v2",
+                "vector_dim": embeddings.shape[1]
             }
         )
