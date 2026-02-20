@@ -10,12 +10,13 @@ Après avoir cloné le dépôt Git :
 cd SimilariteSemantique
 
 2) Créer et activer l’environnement virtuel
+sudo apt install python3-venv   # entrez votre mot de passe utilisateur pour passer à la suite #
 python3 -m venv venv
 source venv/bin/activate
 
 3) Installer les dépendances
 pip install -r requirements.txt
-pip install -r requirements-dev.txt
+pip install -r requirementsTests.txt
 
 4) Lancer l’API
 python3 -m uvicorn app.main:app --reload
@@ -35,7 +36,7 @@ POST /similarity
 python3 -m tests.testApi
 python3 -m tests.testMetrics
 python3 -m tests.testRegistry
-python3 -m tests.testSchemas
+python3 -m tests.testShemas
 
 IMPORTANT :
 Les tests doivent être lancés avec "python3 -m".

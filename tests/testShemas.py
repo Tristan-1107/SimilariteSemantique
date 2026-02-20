@@ -9,7 +9,7 @@ from app.models.schemas import SimilarityRequest
 def test_request_validation_valid():
     req = SimilarityRequest(phrase1="abc", phrase2="def")
     assert req.metrics == ["jaccard"]  # Valeur par défaut
-    print("valeure par défaut bien générée")
+    print("valeur par défaut bien générée")
 
 def test_request_validation_missing():
     with pytest.raises(ValidationError):
