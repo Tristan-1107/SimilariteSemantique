@@ -26,9 +26,9 @@ def test_jaccard_empty():
 
 def test_jaccard_metric_class():
     metric = JaccardMetric()
-    result = metric.compute("Bonjour le monde", "Bonjour tout le monde")
+    result = metric.compute("Bonsoir le monde", "Bonjour le monde")
     assert result.name == "jaccard"
-    assert 0 <= result.score <= 1
+    assert 0 < result.score < 1
     print("Test global pour deux phrases différentes, ok.")
 
 test_jaccard_math()
