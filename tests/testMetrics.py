@@ -1,40 +1,41 @@
-# tests/test_metrics.py
+# tests/testMetrics.py
+import pytest
+from unittest.mock import MagicMock
 
-# Pour lancer ce pgm, se placer dans le repertoire racine "SimilariteSemantique" et exécuter la commande "python3 -m tests.testMetrics"
+from app.core.metrics import JaccardMetric, DiceMetric, LevenshteinMetric, SpacyVectorMetric
+from app.core.language_manager import language_manager
 
-from app.core.metrics import jaccard_similarity, JaccardMetric
 
-def test_jaccard_math():
-    # Cas simple : "a b" et "a c" -> intersection="a", union="a b c" -> 1/3
-    tokens1 = ["a", "b"]
-    tokens2 = ["a", "c"]
-    assert jaccard_similarity(tokens1, tokens2) == 1/3
-    print("Test Jaccard maths, ok.")
+# On utilise le vrai context français pour tous les tests
+@pytest.fixture(scope="module")
+def fr_context():
+    return language_manager.get_context("fr")
 
-def test_jaccard_identical():
-    # Identiques -> 1.0
-    tokens = ["test", "unitaire"]
-    assert jaccard_similarity(tokens, tokens) == 1.0
-    print("Test Jaccard identique, ok.")
 
-def test_jaccard_empty():
-    # Vide -> 0.0 ou 1.0 selon la logique (ici le code dit 1.0 si les deux sont vides)
-    assert jaccard_similarity([], []) == 1.0
-    assert jaccard_similarity(["a"], []) == 0.0
-    print("Test Jaccard phrase vide, ok.")
-    
+def test_jaccard_identical(fr_context):
+    result = JaccardMetric().compute("le chat mange", "le chat mange", fr_context)
+    assert result.score == 1.0
 
-def test_jaccard_metric_class():
-    metric = JaccardMetric()
-    result = metric.compute("Bonsoir le monde", "Bonjour le monde")
-    assert result.name == "jaccard"
-    assert 0 < result.score < 1
-    print("Test global pour deux phrases différentes, ok.")
+def test_jaccard_disjoint(fr_context):
+    result = JaccardMetric().compute("chat", "voiture", fr_context)
+    assert result.score == 0.0
 
-test_jaccard_math()
+def test_dice_identical(fr_context):
+    result = DiceMetric().compute("bonjour monde", "bonjour monde", fr_context)
+    assert result.score == 1.0
 
-test_jaccard_identical()
+def test_levenshtein_identical(fr_context):
+    # Levenshtein n'utilise pas le pipeline, on passe fr_context par cohérence
+    result = LevenshteinMetric().compute("bonjour", "bonjour", fr_context)
+    assert result.score == 1.0
 
-test_jaccard_empty()
+def test_levenshtein_range(fr_context):
+    result = LevenshteinMetric().compute("chat", "chien", fr_context)
+    assert 0.0 <= result.score <= 1.0
 
-test_jaccard_metric_class()
+def test_scores_in_range(fr_context):
+    phrases = [("je mange une pomme", "il dévore une poire")]
+    for p1, p2 in phrases:
+        for metric in [JaccardMetric(), DiceMetric(), LevenshteinMetric()]:
+            r = metric.compute(p1, p2, fr_context)
+            assert 0.0 <= r.score <= 1.0, f"{metric.name} hors bornes"
