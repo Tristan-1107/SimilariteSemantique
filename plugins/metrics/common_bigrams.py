@@ -1,33 +1,6 @@
+# plugins/metrics/common_bigrams.py
 from app.core.metrics import BaseMetric, MetricResult
 
-"""
-Métrique basée sur les bigrammes de mots.
-
-Principe :
-Chaque phrase est transformée en liste de bigrammes (paires de mots consécutifs).
-
-Exemple :
-    "le chat dort"
-    → ("le", "chat"), ("chat", "dort")
-
-On compare ensuite les ensembles de bigrammes des deux phrases en utilisant
-l'indice de Jaccard :
-
-    score = intersection / union
-
-où :
-- intersection = nombre de bigrammes communs
-- union = nombre total de bigrammes distincts
-
-Comportement :
-- Phrases identiques → score = 1.0
-- Aucun bigramme en commun → score = 0.0
-- Si les deux phrases ne contiennent pas de bigrammes → score = 1.0
-- Si une seule phrase contient des bigrammes → score = 0.0
-
-Cette métrique permet de mesurer la similarité locale de structure
-entre deux phrases.
-"""
 
 class CommonBigramsMetric(BaseMetric):
     """

@@ -1,31 +1,6 @@
+# plugins/metrics/prefix.py
 from app.core.metrics import BaseMetric, MetricResult
 
-"""
-Métrique basée sur le plus long préfixe commun.
-
-Principe :
-On parcourt les deux phrases caractère par caractère depuis le début
-et on mesure combien de caractères consécutifs sont identiques.
-
-Exemple :
-    "bonjour monde"
-    "bonjour toi"
-
-Le préfixe commun est "bonjour " → score élevé.
-
-Le score est ensuite normalisé par la longueur de la phrase la plus courte :
-
-    score = longueur_prefixe_commun / longueur_phrase_plus_courte
-
-Comportement :
-- Phrases identiques → score = 1.0
-- Aucun préfixe commun → score = 0.0
-- Deux phrases vides → score = 1.0
-- Une phrase vide → score = 0.0
-
-Cette métrique est utile pour détecter des phrases qui commencent
-de manière similaire.
-"""
 
 class PrefixMetric(BaseMetric):
     """

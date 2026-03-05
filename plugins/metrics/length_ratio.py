@@ -1,23 +1,6 @@
+# plugins/metrics/length_ratio.py
 from app.core.metrics import BaseMetric, MetricResult
 
-"""
-Métrique basée sur la longueur des deux phrases.
-
-Principe :
-On compare la longueur des deux chaînes de caractères et on calcule
-le ratio entre la plus courte et la plus longue :
-
-    score = min(len(s1), len(s2)) / max(len(s1), len(s2))
-
-Comportement :
-- Si les deux phrases ont la même longueur → score = 1.0
-- Si une phrase est beaucoup plus longue que l'autre → score proche de 0
-- Si les deux phrases sont vides → score = 1.0
-- Si une seule phrase est vide → score = 0.0
-
-Cette métrique ne mesure pas le sens des phrases mais uniquement
-leur similarité structurelle en termes de taille.
-"""
 
 class LengthRatioMetric(BaseMetric):
     """
