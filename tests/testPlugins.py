@@ -1,8 +1,10 @@
 # tests/testPlugins.py
 import pytest
+from pathlib import Path
+
 from app.core.registry import registry
 from app.core.language_manager import language_manager
-from app.core.plugin_loader import load_plugins
+from app.core.plugin_loader import load_plugins, _resolve_plugins_path
 
 # On charge les plugins une seule fois pour tous les tests du module
 @pytest.fixture(scope="module", autouse=True)
@@ -12,6 +14,16 @@ def load():
 @pytest.fixture(scope="module")
 def ctx():
     return language_manager.get_context("fr")
+
+
+def test_plugins_path_resolution_is_stable(monkeypatch):
+    project_root = Path(__file__).resolve().parents[1]
+    monkeypatch.chdir(project_root / "tests")
+
+    resolved = _resolve_plugins_path("plugins/metrics")
+
+    assert resolved == (project_root / "plugins" / "metrics").resolve()
+    assert resolved.is_dir()
 
 
 # --- Présence dans le registre ---

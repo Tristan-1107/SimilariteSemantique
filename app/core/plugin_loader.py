@@ -9,6 +9,22 @@ from pathlib import Path
 from app.core.metrics import BaseMetric
 from app.core.registry import registry
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _resolve_plugins_path(plugins_dir: str | Path) -> Path:
+    """
+    Résout le dossier des plugins de manière stable.
+
+    - Un chemin absolu est utilisé tel quel.
+    - Un chemin relatif est résolu depuis la racine du dépôt,
+      pas depuis le répertoire courant du processus.
+    """
+    plugins_path = Path(plugins_dir)
+    if plugins_path.is_absolute():
+        return plugins_path
+    return (PROJECT_ROOT / plugins_path).resolve()
+
 
 def load_plugins(plugins_dir: str = "plugins/metrics") -> None:
     """
@@ -21,7 +37,7 @@ def load_plugins(plugins_dir: str = "plugins/metrics") -> None:
     Le chargement est tolérant aux erreurs : un plugin cassé est ignoré
     avec un message d'avertissement, les autres continuent de charger.
     """
-    plugins_path = Path(plugins_dir)
+    plugins_path = _resolve_plugins_path(plugins_dir)
 
     if not plugins_path.exists():
         print(f"INFO: Répertoire de plugins introuvable : '{plugins_dir}'. Aucun plugin chargé.")
