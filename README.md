@@ -1,39 +1,82 @@
 # SimilariteSemantique
-Ce projet consiste à développer une plateforme web capable de calculer la similarité sémantique entre deux phrases en langue française. L’objectif est de proposer un service en ligne qui combine plusieurs approches du Traitement Automatique des Langues afin de mesurer à quel point deux phrases expriment un sens proche.
 
+API FastAPI de calcul de similarite semantique entre phrases, avec :
 
-INSTRUCTIONS D’UTILISATION DU PROJET
+- des metriques natives basees sur spaCy,
+- une metrique `camembert` via `sentence-transformers`,
+- un systeme de plugins charge automatiquement,
+- un endpoint d'upload JSON pour traiter plusieurs paires de phrases.
 
-Après avoir cloné le dépôt Git :
+## Installation
 
-1) Se placer à la racine du projet
-cd SimilariteSemantique
+Depuis la racine du depot :
 
-2) Créer et activer l’environnement virtuel
-sudo apt install python3-venv   # entrez votre mot de passe utilisateur pour passer à la suite #
-python3 -m venv venv
-source venv/bin/activate
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
+python3 -m pip install -r requirementsTests.txt
+```
 
-3) Installer les dépendances
-pip install -r requirements.txt
-pip install -r requirementsTests.txt
+Verification rapide du modele spaCy :
 
-4) Lancer l’API
+```bash
+python3 -c "import spacy; spacy.load('fr_core_news_md'); print('spaCy OK')"
+```
+
+## Lancer l'API
+
+```bash
 python3 -m uvicorn app.main:app --reload
+```
 
-5) Accéder à l’API
-http://127.0.0.1:8000/docs
+Documentation interactive :
 
-6) Tester l’API (exemple)
-POST /similarity
+- `http://127.0.0.1:8000/docs`
+- `http://127.0.0.1:8000/redoc`
+
+Important :
+
+- `http://127.0.0.1:8000/` ne sert pas de page web et renvoie `404`
+- l'application expose une API, pas un frontend
+
+## Endpoint principal
+
+### `POST /similarity`
+
+Exemple de payload :
+
+```json
 {
   "phrase1": "chat noir",
   "phrase2": "chat blanc",
-  "metrics": ["jaccard", "dice", "levenshtein", "spacy_vector", "camembert"]
+  "metrics": ["jaccard", "dice", "levenshtein", "spacy_vector", "camembert"],
+  "language": "fr"
 }
+```
 
-7) Upload d'un fichier JSON pour traitement batch
-POST /similarity/upload
+Metriques natives disponibles :
+
+- `jaccard`
+- `dice`
+- `levenshtein`
+- `spacy_vector`
+- `camembert`
+
+Des metriques plugin peuvent aussi etre disponibles selon le contenu de `plugins/metrics/`.
+
+## Traitement batch par upload
+
+### `POST /similarity/upload`
+
+Cet endpoint attend un fichier JSON envoye en `multipart/form-data` sous le champ `file`.
+
+Le contenu JSON supporte deux formats.
+
+### Format objet recommande
+
+```json
 {
   "metrics": ["jaccard", "camembert"],
   "language": "fr",
@@ -42,13 +85,52 @@ POST /similarity/upload
     ["bonjour", "salut"]
   ]
 }
+```
 
-8) Lancer les tests (depuis la racine du projet)
+### Format liste legacy accepte
+
+```json
+[
+  ["jaccard", "camembert"],
+  ["chat noir", "chat blanc"],
+  ["bonjour", "salut"]
+]
+```
+
+Exemple `curl` :
+
+```bash
+curl -X POST "http://127.0.0.1:8000/similarity/upload?language=fr" \
+  -F "file=@pairs.json;type=application/json"
+```
+
+Comportement :
+
+- le fichier est traite,
+- la reponse HTTP retourne les resultats,
+- un fichier `result_<nom>.json` est aussi ecrit dans le dossier `data/`
+
+Le dossier de sortie peut etre surcharge via la variable d'environnement `SIMILARITY_DATA_DIR`.
+
+## Tests
+
+Campagne recommande :
+
+```bash
+python3 -m pytest tests/testSchemas.py tests/testRegistry.py tests/testMetrics.py tests/testPlugins.py tests/testApi.py -q
+```
+
+Les fichiers de test existants peuvent aussi etre lances individuellement :
+
+```bash
 python3 -m tests.testApi
 python3 -m tests.testMetrics
 python3 -m tests.testRegistry
 python3 -m tests.testSchemas
+```
 
-IMPORTANT :
-Les tests doivent être lancés avec "python3 -m".
-Ne pas utiliser "python3 fichier.py".
+## Notes utiles
+
+- la metrique `camembert` charge son modele au premier usage, donc le premier appel peut etre plus lent
+- les plugins sont charges automatiquement au demarrage depuis `plugins/metrics/`
+- les resultats batch ecrits dans `data/` sont ignores par Git
