@@ -283,8 +283,6 @@ En pratique, cette metrique utilise :
 - `sentence-transformers`
 - le modele `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
 
-et non un checkpoint CamemBERT pur. Le nom de metrique conserve `camembert` pour rester coherent avec l'intention fonctionnelle de la branche integree.
-
 Caracteristiques :
 
 - chargement lazy au premier appel,
