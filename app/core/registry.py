@@ -5,6 +5,7 @@ from app.core.metrics import (
     DiceMetric,
     LevenshteinMetric,
     SpacyVectorMetric,
+    CamembertMetric,
 )
 
 
@@ -66,3 +67,4 @@ registry.register(JaccardMetric())
 registry.register(DiceMetric())
 registry.register(LevenshteinMetric())
 registry.register(SpacyVectorMetric())
+registry.register(CamembertMetric())

@@ -29,14 +29,25 @@ POST /similarity
 {
   "phrase1": "chat noir",
   "phrase2": "chat blanc",
-  "metrics": ["jaccard", "dice", "levenshtein"]
+  "metrics": ["jaccard", "dice", "levenshtein", "spacy_vector", "camembert"]
 }
 
-7) Lancer les tests (depuis la racine du projet)
+7) Upload d'un fichier JSON pour traitement batch
+POST /similarity/upload
+{
+  "metrics": ["jaccard", "camembert"],
+  "language": "fr",
+  "pairs": [
+    ["chat noir", "chat blanc"],
+    ["bonjour", "salut"]
+  ]
+}
+
+8) Lancer les tests (depuis la racine du projet)
 python3 -m tests.testApi
 python3 -m tests.testMetrics
 python3 -m tests.testRegistry
-python3 -m tests.testShemas
+python3 -m tests.testSchemas
 
 IMPORTANT :
 Les tests doivent être lancés avec "python3 -m".

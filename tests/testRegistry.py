@@ -17,6 +17,13 @@ def test_registry_unknown_metric():
     assert registry.get("cosinus_inconnu") is None
     print("Une métrique inexistance renvoie bien None.")
 
+def test_registry_contains_camembert():
+    metric = registry.get("camembert")
+    assert metric is not None
+    print("L'instance globale 'registry' a bien chargé CamemBERT.")
+
 test_registry_contains_jaccard()
 
 test_registry_unknown_metric()
+
+test_registry_contains_camembert()

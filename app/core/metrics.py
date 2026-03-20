@@ -3,6 +3,32 @@
 # Plus d'import spacy ici, plus de nlp = spacy.load(...)
 # Le pipeline est désormais fourni par le LanguageManager via le LanguageContext.
 
+try:
+    from sentence_transformers import SentenceTransformer, util
+except ImportError:
+    SentenceTransformer = None
+    util = None
+
+CAMEMBERT_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+_bert_model = None
+
+
+def get_bert_model():
+    """Charge le modèle BERT/CamemBERT uniquement au premier usage."""
+    global _bert_model
+
+    if SentenceTransformer is None:
+        raise RuntimeError(
+            "La dépendance 'sentence-transformers' est absente. "
+            "Installez requirements.txt pour utiliser la métrique 'camembert'."
+        )
+
+    if _bert_model is None:
+        print("Chargement du modèle BERT/CamemBERT en cours...")
+        _bert_model = SentenceTransformer(CAMEMBERT_MODEL_NAME)
+
+    return _bert_model
+
 
 def spacy_preprocess(text: str, pipeline) -> list[str]:
     """
@@ -137,5 +163,33 @@ class SpacyVectorMetric(BaseMetric):
             detail={
                 "vector_size": doc1.vector.shape[0],
                 "has_vector": doc1.has_vector and doc2.has_vector,
+            },
+        )
+
+
+class CamembertMetric(BaseMetric):
+    name = "camembert"
+    description = "Similarité sémantique via Sentence-BERT/CamemBERT compatible."
+
+    def compute(self, phrase1, phrase2, context):
+        model = get_bert_model()
+        embeddings = model.encode(
+            [phrase1 or "", phrase2 or ""],
+            convert_to_tensor=True,
+        )
+        score = util.cos_sim(embeddings[0], embeddings[1]).item()
+        score = max(0.0, min(1.0, float(score)))
+
+        vector_dim = None
+        shape = getattr(embeddings, "shape", None)
+        if shape and len(shape) > 1:
+            vector_dim = int(shape[1])
+
+        return MetricResult(
+            name=self.name,
+            score=score,
+            detail={
+                "model": CAMEMBERT_MODEL_NAME,
+                "vector_dim": vector_dim,
             },
         )

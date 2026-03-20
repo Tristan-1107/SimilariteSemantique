@@ -3,4 +3,6 @@ uvicorn
 httpx
 pydantic
 spacy>=3.7.0
+sentence-transformers
+python-multipart
 https://github.com/explosion/spacy-models/releases/download/fr_core_news_md-3.7.0/fr_core_news_md-3.7.0-py3-none-any.whl
