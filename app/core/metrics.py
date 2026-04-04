@@ -1,33 +1,4 @@
-# app/core/metrics.py
-
-# Plus d'import spacy ici, plus de nlp = spacy.load(...)
-# Le pipeline est désormais fourni par le LanguageManager via le LanguageContext.
-
-try:
-    from sentence_transformers import SentenceTransformer, util
-except ImportError:
-    SentenceTransformer = None
-    util = None
-
-CAMEMBERT_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-_bert_model = None
-
-
-def get_bert_model():
-    """Charge le modèle BERT/CamemBERT uniquement au premier usage."""
-    global _bert_model
-
-    if SentenceTransformer is None:
-        raise RuntimeError(
-            "La dépendance 'sentence-transformers' est absente. "
-            "Installez requirements.txt pour utiliser la métrique 'camembert'."
-        )
-
-    if _bert_model is None:
-        print("Chargement du modèle BERT/CamemBERT en cours...")
-        _bert_model = SentenceTransformer(CAMEMBERT_MODEL_NAME)
-
-    return _bert_model
+from app.core.model_registry import CAMEMBERT_MODEL_NAME, model_registry
 
 
 def spacy_preprocess(text: str, pipeline) -> list[str]:
@@ -35,7 +6,6 @@ def spacy_preprocess(text: str, pipeline) -> list[str]:
     Tokenisation avancée.
     Transforme le texte en liste de lemmes en retirant
     la ponctuation et les mots vides.
-    Le pipeline spaCy est passé en paramètre (plus de global).
     """
     doc = pipeline((text or "").lower())
     return [
@@ -44,8 +14,6 @@ def spacy_preprocess(text: str, pipeline) -> list[str]:
         if not token.is_stop and not token.is_punct and not token.is_space
     ]
 
-
-# --- Fonctions mathématiques (inchangées) ---
 
 def jaccard_similarity(tokens1, tokens2):
     set1, set2 = set(tokens1), set(tokens2)
@@ -89,8 +57,6 @@ def levenshtein_similarity(s1, s2):
     return 1 - levenshtein_distance(s1, s2) / max_len
 
 
-# --- Classes de métriques ---
-
 class MetricResult:
     def __init__(self, name, score, detail=None):
         self.name = name
@@ -103,10 +69,6 @@ class BaseMetric:
     description: str = None
 
     def compute(self, phrase1: str, phrase2: str, context) -> MetricResult:
-        """
-        context est un LanguageContext fourni par le LanguageManager.
-        Toutes les métriques doivent accepter ce paramètre.
-        """
         raise NotImplementedError
 
 
@@ -143,7 +105,6 @@ class LevenshteinMetric(BaseMetric):
     description = "Distance d'édition normalisée (basée sur les caractères)."
 
     def compute(self, phrase1, phrase2, context):
-        # Levenshtein n'utilise pas le pipeline, mais respecte la signature
         return MetricResult(
             name=self.name,
             score=levenshtein_similarity(phrase1, phrase2),
@@ -172,12 +133,17 @@ class CamembertMetric(BaseMetric):
     description = "Similarité sémantique via Sentence-BERT/CamemBERT compatible."
 
     def compute(self, phrase1, phrase2, context):
-        model = get_bert_model()
-        embeddings = model.encode(
+        resource = model_registry.get(CAMEMBERT_MODEL_NAME)
+        if resource is None:
+            raise RuntimeError(
+                f"Le modèle '{CAMEMBERT_MODEL_NAME}' n'est pas enregistré."
+            )
+
+        embeddings = resource.encoder.encode(
             [phrase1 or "", phrase2 or ""],
             convert_to_tensor=True,
         )
-        score = util.cos_sim(embeddings[0], embeddings[1]).item()
+        score = resource.util.cos_sim(embeddings[0], embeddings[1]).item()
         score = max(0.0, min(1.0, float(score)))
 
         vector_dim = None
@@ -189,7 +155,7 @@ class CamembertMetric(BaseMetric):
             name=self.name,
             score=score,
             detail={
-                "model": CAMEMBERT_MODEL_NAME,
+                "model": getattr(resource, "model_name", CAMEMBERT_MODEL_NAME),
                 "vector_dim": vector_dim,
             },
         )

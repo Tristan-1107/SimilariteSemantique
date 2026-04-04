@@ -1,38 +1,59 @@
-# tests/test_api.py
-
-# Pour lancer ce pgm, se placer dans le repertoire racine "SimilariteSemantique" et exécuter la commande "python3 -m tests.testApi"
-
 import json
 
 from fastapi.testclient import TestClient
+
 from app.main import app
 
+
 client = TestClient(app)
+
 
 def test_api_similarity_endpoint():
     payload = {
         "phrase1": "Le chat mange",
         "phrase2": "Le chien mange",
-        "metrics": ["jaccard"]
+        "metrics": ["jaccard"],
     }
     response = client.post("/similarity", json=payload)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert "jaccard" in data["scores"]
     assert isinstance(data["scores"]["jaccard"], float)
-    print("Test API : Calcul de similarité réussi (HTTP 200)")
+
 
 def test_api_unknown_metric():
     payload = {
-        "phrase1": "a", 
-        "phrase2": "b", 
-        "metrics": ["super_metric_qui_nexiste_pas"]
+        "phrase1": "a",
+        "phrase2": "b",
+        "metrics": ["super_metric_qui_nexiste_pas"],
     }
     response = client.post("/similarity", json=payload)
+
     assert response.status_code == 400
     assert "Unknown metric" in response.json()["detail"]
-    print("Test API : Erreur métrique inconnue bien gérée (HTTP 400)")
+
+
+def test_api_languages_endpoint_lists_plugin_language():
+    response = client.get("/languages")
+
+    assert response.status_code == 200
+    codes = {language["code"] for language in response.json()["languages"]}
+    assert "fr" in codes
+    assert "xx" in codes
+
+
+def test_api_similarity_accepts_plugin_language():
+    payload = {
+        "phrase1": "bonjour",
+        "phrase2": "bonjour",
+        "metrics": ["jaccard"],
+        "language": "xx",
+    }
+    response = client.post("/similarity", json=payload)
+
+    assert response.status_code == 200
+    assert response.json()["metadata"]["language"] == "xx"
 
 
 def test_api_similarity_upload_endpoint(tmp_path, monkeypatch):
@@ -65,6 +86,34 @@ def test_api_similarity_upload_endpoint(tmp_path, monkeypatch):
     assert (tmp_path / "result_pairs.json").exists()
 
 
+def test_api_similarity_upload_accepts_plugin_language(tmp_path, monkeypatch):
+    monkeypatch.setenv("SIMILARITY_DATA_DIR", str(tmp_path))
+
+    payload = {
+        "metrics": ["jaccard"],
+        "language": "xx",
+        "pairs": [
+            ["bonjour", "bonjour"],
+        ],
+    }
+
+    response = client.post(
+        "/similarity/upload",
+        files={
+            "file": (
+                "pairs_xx.json",
+                json.dumps(payload).encode("utf-8"),
+                "application/json",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["results"]["metadata"]["language"] == "xx"
+    assert (tmp_path / "result_pairs_xx.json").exists()
+
+
 def test_api_similarity_upload_rejects_non_json():
     response = client.post(
         "/similarity/upload",
@@ -72,9 +121,3 @@ def test_api_similarity_upload_rejects_non_json():
     )
 
     assert response.status_code == 400
-
-
-test_api_similarity_endpoint()
-
-test_api_unknown_metric()
-test_api_similarity_upload_rejects_non_json()
