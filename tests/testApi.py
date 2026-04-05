@@ -1,69 +1,59 @@
-import asyncio
 import json
 
-import pytest
-from fastapi import HTTPException
+from fastapi.testclient import TestClient
 
-from app.main import app  # noqa: F401
-from app.api.endpoints import list_languages, similarity, upload_and_process_file
-from app.models.schemas import SimilarityRequest
+from app.main import app
 
 
-class DummyUploadFile:
-    def __init__(self, filename: str, content: bytes):
-        self.filename = filename
-        self._content = content
-
-    async def read(self) -> bytes:
-        return self._content
+client = TestClient(app)
 
 
 def test_api_similarity_endpoint():
-    payload = SimilarityRequest(
-        phrase1="Le chat mange",
-        phrase2="Le chien mange",
-        metrics=["jaccard"],
-    )
+    payload = {
+        "phrase1": "Le chat mange",
+        "phrase2": "Le chien mange",
+        "metrics": ["jaccard"],
+    }
+    response = client.post("/similarity", json=payload)
 
-    response = similarity(payload)
-
-    assert "jaccard" in response.scores
-    assert isinstance(response.scores["jaccard"], float)
+    assert response.status_code == 200
+    data = response.json()
+    assert "jaccard" in data["scores"]
+    assert isinstance(data["scores"]["jaccard"], float)
 
 
 def test_api_unknown_metric():
-    payload = SimilarityRequest(
-        phrase1="a",
-        phrase2="b",
-        metrics=["super_metric_qui_nexiste_pas"],
-    )
+    payload = {
+        "phrase1": "a",
+        "phrase2": "b",
+        "metrics": ["super_metric_qui_nexiste_pas"],
+    }
+    response = client.post("/similarity", json=payload)
 
-    with pytest.raises(HTTPException) as exc_info:
-        similarity(payload)
-
-    assert exc_info.value.status_code == 400
-    assert "Unknown metric" in exc_info.value.detail
+    assert response.status_code == 400
+    assert "Unknown metric" in response.json()["detail"]
 
 
 def test_api_languages_endpoint_lists_plugin_language():
-    response = list_languages()
+    response = client.get("/languages")
 
-    codes = {language["code"] for language in response["languages"]}
+    assert response.status_code == 200
+    codes = {language["code"] for language in response.json()["languages"]}
     assert "fr" in codes
     assert "xx" in codes
 
 
 def test_api_similarity_accepts_plugin_language():
-    payload = SimilarityRequest(
-        phrase1="bonjour",
-        phrase2="bonjour",
-        metrics=["jaccard"],
-        language="xx",
-    )
+    payload = {
+        "phrase1": "bonjour",
+        "phrase2": "bonjour",
+        "metrics": ["jaccard"],
+        "language": "xx",
+    }
+    response = client.post("/similarity", json=payload)
 
-    response = similarity(payload)
-
-    assert response.metadata["language"] == "xx"
+    assert response.status_code == 200
+    assert response.json()["metadata"]["language"] == "xx"
 
 
 def test_api_similarity_upload_endpoint(tmp_path, monkeypatch):
@@ -78,17 +68,21 @@ def test_api_similarity_upload_endpoint(tmp_path, monkeypatch):
         ],
     }
 
-    response = asyncio.run(
-        upload_and_process_file(
-            file=DummyUploadFile(
+    response = client.post(
+        "/similarity/upload",
+        files={
+            "file": (
                 "pairs.json",
                 json.dumps(payload).encode("utf-8"),
-            ),
-        )
+                "application/json",
+            )
+        },
     )
 
-    assert response["output_file"] == "result_pairs.json"
-    assert len(response["results"]["results"]) == 2
+    assert response.status_code == 200
+    data = response.json()
+    assert data["output_file"] == "result_pairs.json"
+    assert len(data["results"]["results"]) == 2
     assert (tmp_path / "result_pairs.json").exists()
 
 
@@ -103,25 +97,27 @@ def test_api_similarity_upload_accepts_plugin_language(tmp_path, monkeypatch):
         ],
     }
 
-    response = asyncio.run(
-        upload_and_process_file(
-            file=DummyUploadFile(
+    response = client.post(
+        "/similarity/upload",
+        files={
+            "file": (
                 "pairs_xx.json",
                 json.dumps(payload).encode("utf-8"),
-            ),
-        )
+                "application/json",
+            )
+        },
     )
 
-    assert response["results"]["metadata"]["language"] == "xx"
+    assert response.status_code == 200
+    data = response.json()
+    assert data["results"]["metadata"]["language"] == "xx"
     assert (tmp_path / "result_pairs_xx.json").exists()
 
 
 def test_api_similarity_upload_rejects_non_json():
-    with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(
-            upload_and_process_file(
-                file=DummyUploadFile("pairs.txt", b"[]"),
-            )
-        )
+    response = client.post(
+        "/similarity/upload",
+        files={"file": ("pairs.txt", b"[]", "text/plain")},
+    )
 
-    assert exc_info.value.status_code == 400
+    assert response.status_code == 400
