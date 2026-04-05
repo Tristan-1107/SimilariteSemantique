@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Similarité Sémantique</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <main class="page-shell">
+        <section class="hero">
+            <p class="eyebrow">API FastAPI + Interface Web</p>
+            <h1>Comparer des phrases depuis le navigateur</h1>
+            <p class="lead">
+                Cette interface utilise les mêmes services que l'API JSON et permet de lancer
+                une comparaison simple ou un traitement batch sans écrire de requête HTTP à la main.
+            </p>
+            <div class="hero-links">
+                <a href="/docs">Documentation Swagger</a>
+                <a href="/redoc">Documentation ReDoc</a>
+                <a href="/languages">Langues API</a>
+            </div>
+        </section>
+
+        <div class="panel-grid">
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Comparaison simple</h2>
+                    <p>Comparer deux phrases avec les métriques de ton choix.</p>
+                </div>
+
+                {% if compare_error %}
+                <div class="message error">{{ compare_error }}</div>
+                {% endif %}
+
+                <form method="post" action="/web/compare" class="stack-form">
+                    <label for="phrase1">Phrase 1</label>
+                    <textarea id="phrase1" name="phrase1" rows="4">{{ compare_form.phrase1 }}</textarea>
+
+                    <label for="phrase2">Phrase 2</label>
+                    <textarea id="phrase2" name="phrase2" rows="4">{{ compare_form.phrase2 }}</textarea>
+
+                    <label for="compare-language">Langue</label>
+                    <select id="compare-language" name="language">
+                        {% for language in languages %}
+                        <option value="{{ language.code }}" {% if compare_form.language == language.code %}selected{% endif %}>
+                            {{ language.display_name }} ({{ language.code }})
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <fieldset>
+                        <legend>Métriques</legend>
+                        <div class="metric-list">
+                            {% for metric in metrics %}
+                            <label class="metric-option">
+                                <input
+                                    type="checkbox"
+                                    name="metrics"
+                                    value="{{ metric.name }}"
+                                    {% if metric.name in compare_form.metrics %}checked{% endif %}
+                                >
+                                <span>{{ metric.name }}</span>
+                                <small>{{ metric.description }}</small>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+
+                    <button type="submit">Calculer la similarité</button>
+                </form>
+
+                {% if compare_result %}
+                <div class="result-card">
+                    <h3>Résultats de la comparaison</h3>
+                    <p class="meta-line">
+                        Langue utilisée : <strong>{{ compare_result.metadata.language }}</strong>
+                    </p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Métrique</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for metric_name, score in compare_result.scores.items() %}
+                            <tr>
+                                <td>{{ metric_name }}</td>
+                                <td>{{ "%.4f"|format(score) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Upload JSON batch</h2>
+                    <p>Envoyer un fichier `.json` pour traiter plusieurs paires d'un coup.</p>
+                </div>
+
+                {% if upload_error %}
+                <div class="message error">{{ upload_error }}</div>
+                {% endif %}
+
+                <form method="post" action="/web/upload" enctype="multipart/form-data" class="stack-form">
+                    <label for="upload-language">Langue par défaut</label>
+                    <select id="upload-language" name="language">
+                        {% for language in languages %}
+                        <option value="{{ language.code }}" {% if upload_form.language == language.code %}selected{% endif %}>
+                            {{ language.display_name }} ({{ language.code }})
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <label for="file">Fichier JSON</label>
+                    <input id="file" name="file" type="file" accept=".json,application/json">
+
+                    <button type="submit">Traiter le fichier</button>
+                </form>
+
+                {% if upload_result %}
+                <div class="result-card">
+                    <h3>Résultats du batch</h3>
+                    <p class="meta-line">
+                        Fichier généré :
+                        <a href="/web/download/{{ upload_result.output_file }}">{{ upload_result.output_file }}</a>
+                    </p>
+                    <p class="meta-line">
+                        Langue utilisée : <strong>{{ upload_result.results.metadata.language }}</strong>
+                    </p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Phrase 1</th>
+                                <th>Phrase 2</th>
+                                {% for metric_name in upload_result.results.metadata.selected_metrics %}
+                                <th>{{ metric_name }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in upload_result.results.results %}
+                            <tr>
+                                <td>{{ row.p1 }}</td>
+                                <td>{{ row.p2 }}</td>
+                                {% for metric_name in upload_result.results.metadata.selected_metrics %}
+                                <td>{{ "%.4f"|format(row.scores[metric_name]) }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </section>
+        </div>
+    </main>
+</body>
+</html>

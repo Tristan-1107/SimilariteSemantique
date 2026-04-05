@@ -2,6 +2,7 @@ fastapi
 uvicorn
 httpx
 pydantic
+jinja2
 spacy>=3.7.0
 sentence-transformers
 python-multipart
