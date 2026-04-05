@@ -191,27 +191,10 @@ Le depot contient maintenant une version statique du site dans `site/` :
 - `site/index.html`
 - `site/styles.css`
 
-Cette version est adaptee a GitHub Pages : quand l'URL du site est ouverte, GitHub Pages sert automatiquement `index.html`.
-
-Workflow ajoute :
-
-- `.github/workflows/deploy-pages.yml`
-
-Ce workflow publie uniquement le dossier `site/` vers GitHub Pages.
-
-URL attendue pour ce depot :
-
-- `https://tristan-1107.github.io/SimilariteSemantique/`
+Cette version est en HTML/CSS pur. Le chef de projet pourra ensuite l'utiliser pour creer le lien `github.io` depuis GitHub, selon l'organisation choisie pour le depot.
 
 Important :
 
 - GitHub Pages heberge seulement des fichiers statiques ;
 - le backend FastAPI dans `app/` ne s'execute donc pas sur `github.io` ;
 - pour avoir les calculs semantiques en ligne, il faudra heberger l'API sur un serveur separe puis connecter le site statique a cette API.
-
-### Activer GitHub Pages
-
-1. pousser les fichiers sur GitHub ;
-2. ouvrir `Settings > Pages` dans le depot GitHub ;
-3. dans `Build and deployment`, choisir `GitHub Actions` comme source ;
-4. lancer ou laisser se lancer automatiquement le workflow `Deploy static site to GitHub Pages`.
