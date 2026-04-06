@@ -12,4 +12,4 @@ class LanguageConfig:
     code: str              # ex: "fr", "en"
     display_name: str      # ex: "Français"
     spacy_model: str       # ex: "fr_core_news_md"
-    embedding_model: str   # ex: "camembert-base" (pour Sprint 5+)
+    embedding_model: str   # ex: "bert_score_french"

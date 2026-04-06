@@ -102,6 +102,6 @@ language_manager.register(
         code="fr",
         display_name="Français",
         spacy_model="fr_core_news_md",
-        embedding_model="camembert-base",
+        embedding_model="bert_score_french",
     )
 )

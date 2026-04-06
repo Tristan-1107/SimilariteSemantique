@@ -148,7 +148,7 @@ Le `LanguageContext` contient :
 Au chargement de `app/core/language_manager.py`, la langue suivante est
 enregistree nativement :
 
-- `fr` -> `Francais` -> `fr_core_news_md`
+- `fr` -> `Francais` -> `fr_core_news_md` -> `bert_score_french`
 
 Cette langue existe meme sans plugin.
 
@@ -245,6 +245,7 @@ Le depot contient aujourd'hui :
 
 - `dummy_echo_model`
 - `bert_score_english`
+- `bert_score_french`
 
 #### `dummy_echo_model`
 
@@ -265,6 +266,15 @@ Dependencies supplementaires requises pour ce plugin :
 - `transformers`
 
 Ces dependances sont maintenant listees dans `requirements.txt`.
+
+#### `bert_score_french`
+
+Plugin BERT francais qui :
+
+- charge `camembert-base`,
+- cree un tokenizer Hugging Face,
+- charge le modele Transformers,
+- met le modele en mode `eval()`.
 
 ## 9. Systeme de metriques
 
@@ -394,12 +404,8 @@ Resolution du modele :
 Consequence pratique :
 
 - pour `en`, le plugin langue declare `embedding_model="bert_score_english"`,
-- pour `fr`, la configuration native utilise `camembert-base`, qui n'est pas
-  un modele enregistre dans `ModelRegistry`,
-- donc appeler `bert_score` en `fr` retombera aujourd'hui sur
-  `bert_score_english`.
-
-Le plugin `bert_score` est donc pense en priorite pour l'anglais.
+- pour `fr`, la configuration native declare `embedding_model="bert_score_french"`,
+- chaque langue principale pointe donc maintenant vers un modele enregistre.
 
 ## 10. Systeme de plugins
 
@@ -599,7 +605,8 @@ Le premier appel a certaines metriques peut declencher des chargements
 externes :
 
 - `camembert` peut charger son modele `sentence-transformers`,
-- `bert_score` peut telecharger `bert-base-uncased` depuis Hugging Face.
+- `bert_score` peut telecharger `bert-base-uncased` ou `camembert-base`
+  depuis Hugging Face selon la langue demandee.
 
 Des warnings peuvent apparaitre au premier chargement, par exemple :
 
@@ -696,6 +703,7 @@ Au premier appel a `bert_score`, il est normal d'observer :
 
 - `dummy_echo_model`
 - `bert_score_english`
+- `bert_score_french`
 
 ### 18.3 Metriques
 

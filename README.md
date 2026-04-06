@@ -139,7 +139,8 @@ python3 -m tests.testSchemas
 ## Notes utiles
 
 - la metrique `camembert` charge son modele au premier usage, donc le premier appel peut etre plus lent
-- la metrique `bert_score` a maintenant ses dependances Python dans `requirements.txt`, mais son modele Hugging Face peut encore etre telecharge au premier appel
+- la metrique `bert_score` a maintenant ses dependances Python dans `requirements.txt`, mais ses modeles Hugging Face peuvent encore etre telecharges au premier appel
 - le support anglais attend `en_core_web_md`, qui est maintenant installe avec les dependances du projet
+- `bert_score` utilise desormais `bert_score_french` pour `fr` et `bert_score_english` pour `en`
 - les plugins sont charges automatiquement au demarrage depuis `plugins/metrics/`
 - les resultats batch ecrits dans `data/` sont ignores par Git
