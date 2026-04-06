@@ -658,6 +658,13 @@ Commande de base :
 python -m uvicorn app.main:app
 ```
 
+Une execution conteneurisee est aussi possible via le `Dockerfile` fourni :
+
+```bash
+docker build -t similarite-semantique .
+docker run --rm -p 8000:8000 similarite-semantique
+```
+
 Routes utiles exposees par FastAPI :
 
 - `/docs`

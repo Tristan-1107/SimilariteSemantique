@@ -39,6 +39,20 @@ python3 -c "import spacy; spacy.load('en_core_web_md'); print('spaCy EN OK')"
 python3 -m uvicorn app.main:app --reload
 ```
 
+## Lancer avec Docker
+
+Construction de l'image :
+
+```bash
+docker build -t similarite-semantique .
+```
+
+Lancement du conteneur :
+
+```bash
+docker run --rm -p 8000:8000 similarite-semantique
+```
+
 Documentation interactive :
 
 - `http://127.0.0.1:8000/docs`
