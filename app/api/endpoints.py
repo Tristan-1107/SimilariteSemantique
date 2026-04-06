@@ -24,6 +24,12 @@ def list_languages():
     return {"languages": language_manager.list_languages()}
 
 
+@router.get("/metrics")
+def list_metrics():
+    """Liste les métriques actuellement enregistrées dans le service."""
+    return {"metrics": registry.list()}
+
+
 @router.post("/similarity", response_model=SimilarityResponse)
 def similarity(payload: SimilarityRequest):
 

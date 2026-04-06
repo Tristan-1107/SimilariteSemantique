@@ -43,6 +43,16 @@ def test_api_languages_endpoint_lists_plugin_language():
     assert "xx" in codes
 
 
+def test_api_metrics_endpoint_lists_native_and_plugin_metrics():
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    metrics = response.json()["metrics"]
+    names = {metric["name"] for metric in metrics}
+    assert "jaccard" in names
+    assert "bert_score" in names
+
+
 def test_api_similarity_accepts_plugin_language():
     payload = {
         "phrase1": "bonjour",

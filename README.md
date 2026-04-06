@@ -5,6 +5,7 @@ API FastAPI de calcul de similarite semantique entre phrases, avec :
 - des metriques natives basees sur spaCy,
 - une metrique `camembert` via `sentence-transformers`,
 - un systeme de plugins charge automatiquement,
+- un endpoint pour lister les metriques disponibles,
 - un endpoint d'upload JSON pour traiter plusieurs paires de phrases.
 
 ## Installation
@@ -49,6 +50,10 @@ Important :
 - l'application expose une API, pas un frontend
 
 ## Endpoint principal
+
+### `GET /metrics`
+
+Retourne les metriques actuellement enregistrees dans l'API.
 
 ### `POST /similarity`
 

@@ -23,6 +23,7 @@ de plusieurs metriques de similarite.
 L'application expose trois endpoints principaux :
 
 - `GET /languages`
+- `GET /metrics`
 - `POST /similarity`
 - `POST /similarity/upload`
 
@@ -42,7 +43,7 @@ automatiquement au demarrage.
 | Chemin | Role |
 | --- | --- |
 | `app/main.py` | Cree l'application FastAPI et declenche le chargement des plugins. |
-| `app/api/endpoints.py` | Definit les endpoints `/languages`, `/similarity` et `/similarity/upload`. |
+| `app/api/endpoints.py` | Definit les endpoints `/languages`, `/metrics`, `/similarity` et `/similarity/upload`. |
 | `app/models/schemas.py` | Definit les schemas Pydantic de l'API. |
 | `app/services/processor.py` | Gere le traitement batch des payloads JSON. |
 | `app/core/language_config.py` | Structure declarative d'une langue. |
@@ -475,7 +476,22 @@ Exemple de reponse :
 }
 ```
 
-### 11.2 `POST /similarity`
+### 11.2 `GET /metrics`
+
+Retourne les metriques actuellement enregistrees dans `registry`.
+
+Exemple de reponse :
+
+```json
+{
+  "metrics": [
+    {"name": "jaccard", "description": "Jaccard sur lemmes (via spaCy) : intersection / union."},
+    {"name": "bert_score", "description": "BERTScore token-level avec alignement max et score F1."}
+  ]
+}
+```
+
+### 11.3 `POST /similarity`
 
 Compare une seule paire de phrases.
 
@@ -504,7 +520,7 @@ Erreurs :
 - metrique inconnue -> HTTP 400,
 - erreur runtime dans le chargement d'un modele -> HTTP 500.
 
-### 11.3 `POST /similarity/upload`
+### 11.4 `POST /similarity/upload`
 
 Accepte un fichier JSON envoye en `multipart/form-data`
 sous le champ `file`.
