@@ -162,6 +162,9 @@ Le depot contient aujourd'hui :
 `en` est la langue anglaise utilisable notamment avec `bert_score`.
 `xx` est une langue factice de demonstration/test.
 
+Le modele spaCy attendu pour `en` est `en_core_web_md`, desormais installe
+avec les dependances du projet.
+
 ### 6.5 Chargement spaCy et fallback
 
 Le chargement de pipeline suit ce comportement :
@@ -583,6 +586,7 @@ Definition effective :
 - `transformers`
 - `python-multipart`
 - le wheel `fr_core_news_md`
+- le wheel `en_core_web_md`
 
 ### 14.2 Dependances Python pour `bert_score`
 
@@ -602,6 +606,9 @@ Des warnings peuvent apparaitre au premier chargement, par exemple :
 - modele spaCy introuvable,
 - requete Hugging Face non authentifiee,
 - rapport de chargement BERT.
+
+Avec `requirements.txt` complet, le cas nominal inclut aussi bien
+`fr_core_news_md` que `en_core_web_md`.
 
 Ces messages ne signifient pas forcement un echec. Ce qui compte est
 le code de reponse final et la presence d'un score.
