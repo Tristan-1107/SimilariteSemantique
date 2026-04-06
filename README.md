@@ -19,6 +19,12 @@ python3 -m pip install -r requirements.txt
 python3 -m pip install -r requirementsTests.txt
 ```
 
+Le fichier `requirements.txt` inclut aussi les dependances necessaires au
+plugin `bert_score` :
+
+- `torch`
+- `transformers`
+
 Verification rapide du modele spaCy :
 
 ```bash
@@ -132,5 +138,6 @@ python3 -m tests.testSchemas
 ## Notes utiles
 
 - la metrique `camembert` charge son modele au premier usage, donc le premier appel peut etre plus lent
+- la metrique `bert_score` a maintenant ses dependances Python dans `requirements.txt`, mais son modele Hugging Face peut encore etre telecharge au premier appel
 - les plugins sont charges automatiquement au demarrage depuis `plugins/metrics/`
 - les resultats batch ecrits dans `data/` sont ignores par Git

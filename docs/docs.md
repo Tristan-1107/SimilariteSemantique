@@ -261,8 +261,7 @@ Dependencies supplementaires requises pour ce plugin :
 - `torch`
 - `transformers`
 
-Ces dependances ne sont pas actuellement listees dans `requirements.txt`.
-Elles doivent etre installees en plus si l'on veut utiliser `bert_score`.
+Ces dependances sont maintenant listees dans `requirements.txt`.
 
 ## 9. Systeme de metriques
 
@@ -580,21 +579,15 @@ Definition effective :
 - `pydantic`
 - `spacy>=3.7.0`
 - `sentence-transformers`
+- `torch`
+- `transformers`
 - `python-multipart`
 - le wheel `fr_core_news_md`
 
-### 14.2 Dependances optionnelles pour `bert_score`
+### 14.2 Dependances Python pour `bert_score`
 
-Pour utiliser le plugin `bert_score`, il faut installer en plus :
-
-- `torch`
-- `transformers`
-
-Exemple :
-
-```bash
-python -m pip install torch transformers
-```
+Les dependances Python du plugin `bert_score` sont incluses dans
+`requirements.txt`.
 
 ### 14.3 Telechargements au premier usage
 
@@ -631,7 +624,7 @@ Le chemin `/` n'est pas defini et renvoie `404`.
 
 Pour utiliser `bert_score`, il est recommande de :
 
-- installer `torch` et `transformers`,
+- installer les dependances de `requirements.txt`,
 - demarrer sans `--reload` lors du premier test sur Windows,
 - attendre le premier chargement du modele.
 
