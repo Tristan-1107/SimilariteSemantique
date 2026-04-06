@@ -138,3 +138,90 @@ def test_api_similarity_upload_rejects_non_json():
         "code": "invalid_file_type",
         "message": "Seuls les fichiers .json sont acceptés",
     }
+
+
+def test_api_similarity_upload_rejects_invalid_json_content():
+    response = client.post(
+        "/similarity/upload",
+        files={"file": ("pairs.json", b"{invalid json}", "application/json")},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"]["code"] == "invalid_json"
+    assert "JSON invalide" in response.json()["detail"]["message"]
+
+
+def test_api_similarity_upload_rejects_unknown_language():
+    payload = {
+        "metrics": ["jaccard"],
+        "pairs": [
+            ["bonjour", "salut"],
+        ],
+    }
+
+    response = client.post(
+        "/similarity/upload?language=zz",
+        files={
+            "file": (
+                "pairs.json",
+                json.dumps(payload).encode("utf-8"),
+                "application/json",
+            )
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"]["code"] == "invalid_request"
+    assert "Langue non supportée" in response.json()["detail"]["message"]
+
+
+def test_api_similarity_upload_rejects_unknown_metric_in_batch():
+    payload = {
+        "metrics": ["mystery_metric"],
+        "pairs": [
+            ["bonjour", "salut"],
+        ],
+    }
+
+    response = client.post(
+        "/similarity/upload",
+        files={
+            "file": (
+                "pairs.json",
+                json.dumps(payload).encode("utf-8"),
+                "application/json",
+            )
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == {
+        "code": "invalid_request",
+        "message": "Unknown metric(s): mystery_metric",
+    }
+
+
+def test_api_similarity_upload_rejects_invalid_pair_shape():
+    payload = {
+        "metrics": ["jaccard"],
+        "pairs": [
+            ["bonjour", "salut", "extra"],
+        ],
+    }
+
+    response = client.post(
+        "/similarity/upload",
+        files={
+            "file": (
+                "pairs.json",
+                json.dumps(payload).encode("utf-8"),
+                "application/json",
+            )
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == {
+        "code": "invalid_request",
+        "message": "Couple invalide à l'index 1: chaque entrée doit contenir exactement 2 phrases.",
+    }
