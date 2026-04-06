@@ -520,6 +520,17 @@ Erreurs :
 - metrique inconnue -> HTTP 400,
 - erreur runtime dans le chargement d'un modele -> HTTP 500.
 
+Format d'erreur :
+
+```json
+{
+  "detail": {
+    "code": "unknown_metric",
+    "message": "Métrique inconnue : super_metric_qui_nexiste_pas"
+  }
+}
+```
+
 ### 11.4 `POST /similarity/upload`
 
 Accepte un fichier JSON envoye en `multipart/form-data`
@@ -557,6 +568,9 @@ Comportement :
 3. delegation a `process_minimal_json(...)`,
 4. ecriture du resultat dans `data/` ou dans `SIMILARITY_DATA_DIR`,
 5. retour du resultat dans la reponse HTTP.
+
+Les erreurs HTTP renvoyees par l'endpoint suivent egalement le format
+structure `detail = {code, message}`.
 
 ## 12. Service batch
 

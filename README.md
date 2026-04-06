@@ -55,6 +55,17 @@ Important :
 
 Retourne les metriques actuellement enregistrees dans l'API.
 
+En cas d'erreur, l'API renvoie des erreurs structurees dans `detail` :
+
+```json
+{
+  "detail": {
+    "code": "unknown_metric",
+    "message": "Métrique inconnue : super_metric_qui_nexiste_pas"
+  }
+}
+```
+
 ### `POST /similarity`
 
 Exemple de payload :

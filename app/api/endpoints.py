@@ -18,6 +18,16 @@ def _get_data_dir() -> Path:
     return Path(os.environ.get("SIMILARITY_DATA_DIR", PROJECT_ROOT / "data"))
 
 
+def _api_error(status_code: int, code: str, message: str) -> HTTPException:
+    return HTTPException(
+        status_code=status_code,
+        detail={
+            "code": code,
+            "message": message,
+        },
+    )
+
+
 @router.get("/languages")
 def list_languages():
     """Liste les langues supportées par le service."""
@@ -37,18 +47,18 @@ def similarity(payload: SimilarityRequest):
     try:
         context = language_manager.get_context(payload.language)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise _api_error(400, "unsupported_language", str(e))
 
     scores = {}
     for metric_name in payload.metrics:
         metric = registry.get(metric_name)
         if not metric:
-            raise HTTPException(status_code=400, detail=f"Unknown metric: {metric_name}")
+            raise _api_error(400, "unknown_metric", f"Métrique inconnue : {metric_name}")
 
         try:
             result = metric.compute(payload.phrase1, payload.phrase2, context)
         except RuntimeError as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise _api_error(500, "metric_runtime_error", str(e))
         scores[metric_name] = result.score
 
     return SimilarityResponse(
@@ -64,20 +74,20 @@ def similarity(payload: SimilarityRequest):
 async def upload_and_process_file(file: UploadFile = File(...), language: str = "fr"):
     filename = Path(file.filename or "").name
     if not filename.lower().endswith(".json"):
-        raise HTTPException(status_code=400, detail="Seuls les fichiers .json sont acceptés")
+        raise _api_error(400, "invalid_file_type", "Seuls les fichiers .json sont acceptés")
 
     try:
         content = await file.read()
         data = json.loads(content)
     except json.JSONDecodeError as e:
-        raise HTTPException(status_code=400, detail=f"JSON invalide: {e.msg}")
+        raise _api_error(400, "invalid_json", f"JSON invalide : {e.msg}")
 
     try:
         results = process_minimal_json(data, default_language=language)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise _api_error(400, "invalid_request", str(e))
     except RuntimeError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _api_error(500, "processing_error", str(e))
 
     output_dir = _get_data_dir()
     output_dir.mkdir(parents=True, exist_ok=True)

@@ -31,7 +31,10 @@ def test_api_unknown_metric():
     response = client.post("/similarity", json=payload)
 
     assert response.status_code == 400
-    assert "Unknown metric" in response.json()["detail"]
+    assert response.json()["detail"] == {
+        "code": "unknown_metric",
+        "message": "Métrique inconnue : super_metric_qui_nexiste_pas",
+    }
 
 
 def test_api_languages_endpoint_lists_plugin_language():
@@ -131,3 +134,7 @@ def test_api_similarity_upload_rejects_non_json():
     )
 
     assert response.status_code == 400
+    assert response.json()["detail"] == {
+        "code": "invalid_file_type",
+        "message": "Seuls les fichiers .json sont acceptés",
+    }
