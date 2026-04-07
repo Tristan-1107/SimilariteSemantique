@@ -199,7 +199,7 @@ Les fichiers de test existants peuvent aussi etre lances individuellement :
 
 ## Depannage des metriques ML
 
-Si tu vois une erreur du type :
+Si il y a une erreur du type :
 
 - `La dépendance 'sentence-transformers' est absente`
 - `Les dépendances 'transformers' et 'torch' sont requises`
@@ -216,7 +216,7 @@ python3 -m pip show sentence-transformers torch transformers
 
 Sur ce depot, les dependances ML sont attendues dans `.venv`, pas dans `venv` ni dans le Python systeme.
 
-Si besoin, reinstalle-les dans `.venv` :
+Si besoin, reinstallez-les dans `.venv` :
 
 ```bash
 source .venv/bin/activate
