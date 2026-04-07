@@ -5,6 +5,7 @@ API FastAPI de calcul de similarite semantique entre phrases, avec :
 - des metriques natives basees sur spaCy,
 - une metrique `camembert` via `sentence-transformers`,
 - un systeme de plugins charge automatiquement,
+- un endpoint pour lister les metriques disponibles,
 - un endpoint d'upload JSON pour traiter plusieurs paires de phrases,
 - une interface web integree pour utiliser le service depuis un navigateur.
 
@@ -26,16 +27,37 @@ Important :
 - dans ce depot, l'environnement attendu est `.venv/` ;
 - si ton IDE pointe vers `venv/bin/python` ou `/usr/bin/python3`, les metriques `camembert` et `bert_score` peuvent echouer faute de dependances.
 
-Verification rapide du modele spaCy :
+Le fichier `requirements.txt` inclut aussi les dependances necessaires au
+plugin `bert_score` :
+
+- `torch`
+- `transformers`
+
+Verification rapide des modeles spaCy :
 
 ```bash
 .venv/bin/python -c "import spacy; spacy.load('fr_core_news_md'); print('spaCy OK')"
+.venv/bin/python -c "import spacy; spacy.load('en_core_web_md'); print('spaCy EN OK')"
 ```
 
 ## Lancer l'application
 
 ```bash
 .venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+## Lancer avec Docker
+
+Construction de l'image :
+
+```bash
+docker build -t similarite-semantique .
+```
+
+Lancement du conteneur :
+
+```bash
+docker run --rm -p 8000:8000 similarite-semantique
 ```
 
 Interface web :
@@ -63,6 +85,21 @@ La page d'accueil permet :
 - de telecharger le fichier `result_<nom>.json` genere apres un batch.
 
 ## Endpoint principal
+
+### `GET /metrics`
+
+Retourne les metriques actuellement enregistrees dans l'API.
+
+En cas d'erreur, l'API renvoie des erreurs structurees dans `detail` :
+
+```json
+{
+  "detail": {
+    "code": "unknown_metric",
+    "message": "Métrique inconnue : super_metric_qui_nexiste_pas"
+  }
+}
+```
 
 ### `POST /similarity`
 
@@ -154,6 +191,9 @@ Les fichiers de test existants peuvent aussi etre lances individuellement :
 ## Notes utiles
 
 - la metrique `camembert` charge son modele au premier usage, donc le premier appel peut etre plus lent
+- la metrique `bert_score` a maintenant ses dependances Python dans `requirements.txt`, mais ses modeles Hugging Face peuvent encore etre telecharges au premier appel
+- le support anglais attend `en_core_web_md`, qui est maintenant installe avec les dependances du projet
+- `bert_score` utilise desormais `bert_score_french` pour `fr` et `bert_score_english` pour `en`
 - les plugins sont charges automatiquement au demarrage depuis `plugins/metrics/`
 - les resultats batch ecrits dans `data/` sont ignores par Git
 

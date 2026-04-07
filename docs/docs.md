@@ -23,6 +23,7 @@ de plusieurs metriques de similarite.
 L'application expose trois endpoints principaux :
 
 - `GET /languages`
+- `GET /metrics`
 - `POST /similarity`
 - `POST /similarity/upload`
 
@@ -42,7 +43,7 @@ automatiquement au demarrage.
 | Chemin | Role |
 | --- | --- |
 | `app/main.py` | Cree l'application FastAPI et declenche le chargement des plugins. |
-| `app/api/endpoints.py` | Definit les endpoints `/languages`, `/similarity` et `/similarity/upload`. |
+| `app/api/endpoints.py` | Definit les endpoints `/languages`, `/metrics`, `/similarity` et `/similarity/upload`. |
 | `app/models/schemas.py` | Definit les schemas Pydantic de l'API. |
 | `app/services/processor.py` | Gere le traitement batch des payloads JSON. |
 | `app/core/language_config.py` | Structure declarative d'une langue. |
@@ -148,7 +149,7 @@ Le `LanguageContext` contient :
 Au chargement de `app/core/language_manager.py`, la langue suivante est
 enregistree nativement :
 
-- `fr` -> `Francais` -> `fr_core_news_md`
+- `fr` -> `Francais` -> `fr_core_news_md` -> `bert_score_french`
 
 Cette langue existe meme sans plugin.
 
@@ -161,6 +162,9 @@ Le depot contient aujourd'hui :
 
 `en` est la langue anglaise utilisable notamment avec `bert_score`.
 `xx` est une langue factice de demonstration/test.
+
+Le modele spaCy attendu pour `en` est `en_core_web_md`, desormais installe
+avec les dependances du projet.
 
 ### 6.5 Chargement spaCy et fallback
 
@@ -242,6 +246,7 @@ Le depot contient aujourd'hui :
 
 - `dummy_echo_model`
 - `bert_score_english`
+- `bert_score_french`
 
 #### `dummy_echo_model`
 
@@ -261,8 +266,16 @@ Dependencies supplementaires requises pour ce plugin :
 - `torch`
 - `transformers`
 
-Ces dependances ne sont pas actuellement listees dans `requirements.txt`.
-Elles doivent etre installees en plus si l'on veut utiliser `bert_score`.
+Ces dependances sont maintenant listees dans `requirements.txt`.
+
+#### `bert_score_french`
+
+Plugin BERT francais qui :
+
+- charge `camembert-base`,
+- cree un tokenizer Hugging Face,
+- charge le modele Transformers,
+- met le modele en mode `eval()`.
 
 ## 9. Systeme de metriques
 
@@ -392,12 +405,8 @@ Resolution du modele :
 Consequence pratique :
 
 - pour `en`, le plugin langue declare `embedding_model="bert_score_english"`,
-- pour `fr`, la configuration native utilise `camembert-base`, qui n'est pas
-  un modele enregistre dans `ModelRegistry`,
-- donc appeler `bert_score` en `fr` retombera aujourd'hui sur
-  `bert_score_english`.
-
-Le plugin `bert_score` est donc pense en priorite pour l'anglais.
+- pour `fr`, la configuration native declare `embedding_model="bert_score_french"`,
+- chaque langue principale pointe donc maintenant vers un modele enregistre.
 
 ## 10. Systeme de plugins
 
@@ -467,7 +476,22 @@ Exemple de reponse :
 }
 ```
 
-### 11.2 `POST /similarity`
+### 11.2 `GET /metrics`
+
+Retourne les metriques actuellement enregistrees dans `registry`.
+
+Exemple de reponse :
+
+```json
+{
+  "metrics": [
+    {"name": "jaccard", "description": "Jaccard sur lemmes (via spaCy) : intersection / union."},
+    {"name": "bert_score", "description": "BERTScore token-level avec alignement max et score F1."}
+  ]
+}
+```
+
+### 11.3 `POST /similarity`
 
 Compare une seule paire de phrases.
 
@@ -496,7 +520,18 @@ Erreurs :
 - metrique inconnue -> HTTP 400,
 - erreur runtime dans le chargement d'un modele -> HTTP 500.
 
-### 11.3 `POST /similarity/upload`
+Format d'erreur :
+
+```json
+{
+  "detail": {
+    "code": "unknown_metric",
+    "message": "Métrique inconnue : super_metric_qui_nexiste_pas"
+  }
+}
+```
+
+### 11.4 `POST /similarity/upload`
 
 Accepte un fichier JSON envoye en `multipart/form-data`
 sous le champ `file`.
@@ -533,6 +568,9 @@ Comportement :
 3. delegation a `process_minimal_json(...)`,
 4. ecriture du resultat dans `data/` ou dans `SIMILARITY_DATA_DIR`,
 5. retour du resultat dans la reponse HTTP.
+
+Les erreurs HTTP renvoyees par l'endpoint suivent egalement le format
+structure `detail = {code, message}`.
 
 ## 12. Service batch
 
@@ -580,21 +618,16 @@ Definition effective :
 - `pydantic`
 - `spacy>=3.7.0`
 - `sentence-transformers`
-- `python-multipart`
-- le wheel `fr_core_news_md`
-
-### 14.2 Dependances optionnelles pour `bert_score`
-
-Pour utiliser le plugin `bert_score`, il faut installer en plus :
-
 - `torch`
 - `transformers`
+- `python-multipart`
+- le wheel `fr_core_news_md`
+- le wheel `en_core_web_md`
 
-Exemple :
+### 14.2 Dependances Python pour `bert_score`
 
-```bash
-python -m pip install torch transformers
-```
+Les dependances Python du plugin `bert_score` sont incluses dans
+`requirements.txt`.
 
 ### 14.3 Telechargements au premier usage
 
@@ -602,13 +635,17 @@ Le premier appel a certaines metriques peut declencher des chargements
 externes :
 
 - `camembert` peut charger son modele `sentence-transformers`,
-- `bert_score` peut telecharger `bert-base-uncased` depuis Hugging Face.
+- `bert_score` peut telecharger `bert-base-uncased` ou `camembert-base`
+  depuis Hugging Face selon la langue demandee.
 
 Des warnings peuvent apparaitre au premier chargement, par exemple :
 
 - modele spaCy introuvable,
 - requete Hugging Face non authentifiee,
 - rapport de chargement BERT.
+
+Avec `requirements.txt` complet, le cas nominal inclut aussi bien
+`fr_core_news_md` que `en_core_web_md`.
 
 Ces messages ne signifient pas forcement un echec. Ce qui compte est
 le code de reponse final et la presence d'un score.
@@ -621,6 +658,13 @@ Commande de base :
 python -m uvicorn app.main:app
 ```
 
+Une execution conteneurisee est aussi possible via le `Dockerfile` fourni :
+
+```bash
+docker build -t similarite-semantique .
+docker run --rm -p 8000:8000 similarite-semantique
+```
+
 Routes utiles exposees par FastAPI :
 
 - `/docs`
@@ -631,7 +675,7 @@ Le chemin `/` n'est pas defini et renvoie `404`.
 
 Pour utiliser `bert_score`, il est recommande de :
 
-- installer `torch` et `transformers`,
+- installer les dependances de `requirements.txt`,
 - demarrer sans `--reload` lors du premier test sur Windows,
 - attendre le premier chargement du modele.
 
@@ -696,6 +740,7 @@ Au premier appel a `bert_score`, il est normal d'observer :
 
 - `dummy_echo_model`
 - `bert_score_english`
+- `bert_score_french`
 
 ### 18.3 Metriques
 
