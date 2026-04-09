@@ -17,15 +17,19 @@ L'objectif est d'expliquer le projet de bout en bout a partir du code actuel.
 
 ## 2. Resume fonctionnel
 
-`SimilariteSemantique` est une API FastAPI qui compare des phrases a l'aide
+`SimilariteSemantique` est une application FastAPI qui compare des phrases a l'aide
 de plusieurs metriques de similarite.
 
-L'application expose trois endpoints principaux :
+L'application expose quatre endpoints API principaux :
 
 - `GET /languages`
 - `GET /metrics`
 - `POST /similarity`
 - `POST /similarity/upload`
+
+Une interface web HTML est egalement exposee, avec comme point d'entree :
+
+- `GET /`
 
 Le moteur combine trois couches extensibles :
 
@@ -46,6 +50,7 @@ automatiquement au demarrage.
 | `app/api/endpoints.py` | Definit les endpoints `/languages`, `/metrics`, `/similarity` et `/similarity/upload`. |
 | `app/models/schemas.py` | Definit les schemas Pydantic de l'API. |
 | `app/services/processor.py` | Gere le traitement batch des payloads JSON. |
+| `app/services/similarity.py` | Centralise la liste des langues/metriques et le calcul de similarite. |
 | `app/core/language_config.py` | Structure declarative d'une langue. |
 | `app/core/language_manager.py` | Gere les langues, les pipelines spaCy et leur cache. |
 | `app/core/language_loader.py` | Charge des langues plugin depuis `plugins/languages/`. |
@@ -57,14 +62,17 @@ automatiquement au demarrage.
 | `app/core/plugin_loader.py` | Charge les metriques plugin depuis `plugins/metrics/`. |
 | `app/core/loader_utils.py` | Fournit la resolution de chemins stable et l'import dynamique commun. |
 | `app/core/spacy_compat.py` | Fournit `spaCy` si disponible, sinon un fallback minimal. |
+| `app/web/routes.py` | Definit la page d'accueil HTML et les routes web de comparaison, upload et telechargement. |
+| `app/web/templates/index.html` | Template Jinja2 principal de l'interface web. |
+| `app/static/styles.css` | Styles statiques servis sous `/static`. |
 
 ### 3.2 Repertoires de plugins
 
 | Dossier | Contenu |
 | --- | --- |
-| `plugins/languages/` | Declarations de langues via `LanguageConfig`. |
-| `plugins/models/` | Definitions de modeles legeres, chargees en lazy au premier usage. |
-| `plugins/metrics/` | Metriques de similarite supplementaires. |
+| `plugins/languages/` | Declarations de langues via `LanguageConfig`, avec un gabarit `_example_language.py` a copier. |
+| `plugins/models/` | Definitions de modeles legeres, chargees en lazy au premier usage, avec un gabarit `_example_model.py`. |
+| `plugins/metrics/` | Metriques de similarite supplementaires, avec un gabarit `_example_metric.py`. |
 
 ### 3.3 Repertoires utilitaires
 
@@ -72,7 +80,7 @@ automatiquement au demarrage.
 | --- | --- |
 | `tests/` | Tests unitaires et tests d'integration. |
 | `docs/` | Documentation technique. |
-| `data/` | Sortie des traitements batch uploades. |
+| `data/` | Dossier de sortie par defaut des traitements batch, cree a la demande. |
 
 ## 4. Sequence exacte de demarrage
 
@@ -85,14 +93,16 @@ python -m uvicorn app.main:app
 `app/main.py` execute les operations suivantes :
 
 1. creation de l'objet `FastAPI`,
-2. inclusion du routeur de `app.api.endpoints`,
-3. chargement des plugins de langues via `load_languages("plugins/languages")`,
-4. chargement des plugins de modeles via `load_models("plugins/models")`,
-5. chargement des plugins de metriques via `load_plugins("plugins/metrics")`.
+2. montage des fichiers statiques sous `/static`,
+3. inclusion du routeur API de `app.api.endpoints`,
+4. inclusion du routeur web de `app.web.routes`,
+5. chargement des plugins de langues via `load_languages("plugins/languages")`,
+6. chargement des plugins de modeles via `load_models("plugins/models")`,
+7. chargement des plugins de metriques via `load_plugins("plugins/metrics")`.
 
 Important :
 
-- l'import de `app.api.endpoints` importe deja `registry` et `language_manager`,
+- l'import de `app.api.endpoints` et `app.web.routes` s'appuie sur les registres globaux,
 - cela enregistre les metriques natives et la langue native `fr`,
 - aucun modele ML lourd n'est charge au demarrage,
 - seuls les objets declaratifs legers sont enregistres.
@@ -421,6 +431,11 @@ Contrat :
 - exposer une ou plusieurs instances de `LanguageConfig` dans le module,
 - le loader les decouvre puis les enregistre dans `language_manager`.
 
+Gabarit disponible :
+
+- `_example_language.py` fournit une structure minimale a copier pour creer un nouveau plugin langue
+- tant que le fichier conserve son prefixe `_`, il est ignore par le loader
+
 Gestion des erreurs :
 
 - fichier invalide -> warning et on continue,
@@ -438,6 +453,11 @@ Contrat :
 - le loader les instancie,
 - les definitions sont enregistrees sans charger le modele.
 
+Gabarit disponible :
+
+- `_example_model.py` fournit une structure minimale a copier pour creer un nouveau plugin modele
+- tant que le fichier conserve son prefixe `_`, il est ignore par le loader
+
 Gestion des erreurs :
 
 - import ou instanciation impossible -> warning et on continue.
@@ -454,11 +474,21 @@ Contrat :
 - le loader les instancie,
 - les metriques sont enregistrees dans `registry`.
 
+Gabarit disponible :
+
+- `_example_metric.py` fournit une structure minimale a copier pour creer un nouveau plugin metrique
+- tant que le fichier conserve son prefixe `_`, il est ignore par le loader
+
 Gestion des erreurs :
 
 - import ou instanciation impossible -> warning et on continue.
 
 ## 11. Endpoints exposes
+
+Les routes se repartissent en deux groupes :
+
+- les endpoints API JSON, exposes dans la documentation OpenAPI,
+- les routes web HTML, exposees hors schema OpenAPI.
 
 ### 11.1 `GET /languages`
 
@@ -572,6 +602,24 @@ Comportement :
 Les erreurs HTTP renvoyees par l'endpoint suivent egalement le format
 structure `detail = {code, message}`.
 
+### 11.5 Routes web
+
+Le projet expose egalement une interface web server-side rendue avec Jinja2.
+
+Routes disponibles :
+
+- `GET /` : page d'accueil HTML
+- `POST /web/compare` : soumission du formulaire de comparaison
+- `POST /web/upload` : upload d'un fichier JSON batch depuis l'interface
+- `GET /web/download/{filename}` : telechargement d'un resultat batch genere
+
+Comportement :
+
+- `/` affiche les langues et metriques disponibles,
+- `/web/compare` rend le score dans la page HTML,
+- `/web/upload` enregistre le resultat batch puis affiche un lien de telechargement,
+- `/web/download/{filename}` valide strictement le nom du fichier avant de servir le JSON.
+
 ## 12. Service batch
 
 `app/services/processor.py` fournit `process_minimal_json(...)`.
@@ -616,6 +664,7 @@ Definition effective :
 - `uvicorn`
 - `httpx`
 - `pydantic`
+- `jinja2`
 - `spacy>=3.7.0`
 - `sentence-transformers`
 - `torch`
@@ -667,11 +716,20 @@ docker run --rm -p 8000:8000 similarite-semantique
 
 Routes utiles exposees par FastAPI :
 
+- `/`
 - `/docs`
 - `/redoc`
 - `/openapi.json`
+- `/web/compare`
+- `/web/upload`
+- `/web/download/{filename}`
+- `/static/...`
 
-Le chemin `/` n'est pas defini et renvoie `404`.
+Important :
+
+- `/` sert l'interface web HTML du projet,
+- les routes web sont declarees avec `include_in_schema=False` et n'apparaissent donc pas dans `/docs`,
+- les endpoints API JSON restent disponibles en parallele.
 
 Pour utiliser `bert_score`, il est recommande de :
 
@@ -688,6 +746,7 @@ Le dossier `tests/` couvre plusieurs couches :
 - `testMetrics.py` -> metriques natives, dont `camembert`,
 - `testPlugins.py` -> plugins de metriques,
 - `testApi.py` -> endpoints FastAPI,
+- `testWeb.py` -> interface web et telechargement des resultats,
 - `testModelLoader.py` -> registre/loader de modeles,
 - `testLanguageLoader.py` -> loader de langues,
 - `testBertScorePlugin.py` -> enregistrement et calcul de `bert_score`.
@@ -736,11 +795,19 @@ Au premier appel a `bert_score`, il est normal d'observer :
 - `en`
 - `xx`
 
+Gabarit non charge :
+
+- `_example_language.py`
+
 ### 18.2 Modeles
 
 - `dummy_echo_model`
 - `bert_score_english`
 - `bert_score_french`
+
+Gabarit non charge :
+
+- `_example_model.py`
 
 ### 18.3 Metriques
 
@@ -749,6 +816,10 @@ Au premier appel a `bert_score`, il est normal d'observer :
 - `prefix`
 - `common_bigrams`
 - `bert_score`
+
+Gabarit non charge :
+
+- `_example_metric.py`
 
 ## 19. Resume mental rapide
 

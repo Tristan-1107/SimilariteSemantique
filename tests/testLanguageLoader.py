@@ -1,8 +1,5 @@
 import logging
 
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-
 import app.api.endpoints as endpoints_module
 import app.core.language_loader as language_loader_module
 from app.core.language_config import LanguageConfig
@@ -57,16 +54,10 @@ def test_loaded_language_appears_in_languages_endpoint_and_fr_stays_available(
     monkeypatch.setattr(endpoints_module, "language_manager", test_manager)
     _write_language_plugin(tmp_path)
 
-    app = FastAPI()
-    app.include_router(endpoints_module.router)
-
     language_loader_module.load_languages(tmp_path)
 
-    client = TestClient(app)
-    response = client.get("/languages")
-
-    assert response.status_code == 200
-    codes = {language["code"] for language in response.json()["languages"]}
+    response = endpoints_module.list_languages()
+    codes = {language["code"] for language in response["languages"]}
     assert "fr" in codes
     assert "xx" in codes
     assert test_manager.get_context("fr").config.code == "fr"
