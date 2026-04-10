@@ -51,18 +51,18 @@ Verification rapide des modeles spaCy :
 Construction de l'image :
 
 ```bash
-docker build -t similarite-semantique .
+sudo docker build -t similarite-semantique .
 ```
 
 Lancement du conteneur :
 
 ```bash
-docker run --rm -p 8000:8000 similarite-semantique
+sudo docker run --rm -p 8000:8000 similarite-semantique
 ```
 
 Interface web :
 
-- `http://127.0.0.1:8000/`
+- http://127.0.0.1:8000/
 
 Documentation interactive :
 
